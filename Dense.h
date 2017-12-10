@@ -19,10 +19,7 @@ private://just for func
 		const int len;
 	public:
 		key(int n):len(n) {
-			str = new char[n];
-			for (int i = 0; i < n - 1; i++)
-				str[i] = 'a';
-			str[n - 1] = 0;
+			refresh();
 		}
 		void operator++(int) {
 			int i = len - 2;
@@ -58,6 +55,14 @@ private://just for func
 		char* get_index() {
 			return str;
 		}
+		void refresh() {
+			if (str)
+				delete[]str;
+			str = new char[len];
+			for (int i = 0; i < len - 1; i++)
+				str[i] = 'a';
+			str[len - 1] = 0;
+		}
 		~key() {
 			delete[]str;
 		}
@@ -72,6 +77,7 @@ private:
 	pair<char*, T> *arr;
 	key *last_key;
 	int ind = 0;
+	int pages = 0;
 public:
 	Dense(const char x[]) {
 		file_path = new char[len(x) + 1];
@@ -106,7 +112,8 @@ public:
 		//strcat_s(keys_path, 4, "kys");
 	}
 	int Add(T _thing) {
-		if (ind < n) {
+		if (ind < listSize) {
+			olololo:
 			int l = strlen(last_key->get_index()) + 1;
 			arr[ind].first = new char[l];
 			strcpy_s(arr[ind].first, l, last_key->get_index());
@@ -115,42 +122,57 @@ public:
 			(*last_key)++;
 			return 0;
 		}
+		else {
+			for (int i = 0; i < listSize; i++)
+				delete[]arr[i].first;
+			//last_key->refresh();
+			ind = 0;
+			goto olololo;
+		}
 		return -1;
 	}
 	void WritePage() {//вообще-то надо дозаписывать в то место, куда надо, а не перезаписывать, но пока и так сойдёт
-		dataFile.open(file_path, ios::out | ios::binary);
-		keysFile.open(keys_path, ios::out | ios::binary);
+		dataFile.open(file_path, ios::out | ios::binary | ios::app);
+		keysFile.open(keys_path, ios::out | ios::binary | ios::app);
 		if (!(dataFile.is_open() && keysFile.is_open()))
 			throw "Smth about genocide";
-		for (int i = 0; i < n; i++) {
+		for (int i = 0; i < listSize; i++) {
 			dataFile.write((char*)&arr[i].second, sizeof(T));
 			keysFile.write(arr[i].first, indexK * sizeof(char));
-			int s = i * sizeof(T);//указатель на запись в dataFile
-			keysFile.write((char*)&i, sizeof(int));
+			int s = (pages * listSize + i) * sizeof(T);//указатель на запись в dataFile
+			keysFile.write((char*)&s, sizeof(int));
 			if (dataFile.fail() || keysFile.fail())
 				throw "Ich Singer Bister tag Ervaght!";
 		}
+		++pages;
 		dataFile.close();
 		keysFile.close();
 	}
-	void ReadPage() {//вообще-то надо читывать откуда надо, а не с начала, но пока и так сойдёт
+	void ReadPage(int _n) {
+		if (_n * listSize > n || _n < 0)
+			throw "It haven't page by this index";
 		dataFile.open(file_path, ios::in | ios::binary);
 		keysFile.open(keys_path, ios::in | ios::binary);
 		if (!(dataFile.is_open() && keysFile.is_open()))
 			throw "Smth about genocide";
 		int i = 0;
-		while (!keysFile.eof()) {
+
+		keysFile.seekg(_n * listSize * (indexK*sizeof(char) + sizeof(int)), ios_base::beg);
+		while (i < listSize) {
+			arr[i].first = new char[indexK];
 			keysFile.read(arr[i].first, indexK * sizeof(char));
 			int k = 0;
 			keysFile.read((char*)&k, sizeof(int));
 			dataFile.seekg(k, ios_base::beg);
 			dataFile.read((char*)&arr[i].second, sizeof(T));
+			++i;
 		}
 		dataFile.close();
 		keysFile.close();
 	}
+
 	void test() {
-		for (int i = 0; i < n; i++)
+		for (int i = 0; i < listSize; i++)
 			cout << arr[i].second << endl;
 	}
 	int Insert(T _thing) {
