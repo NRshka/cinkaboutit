@@ -1,7 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #ifndef _DENSE_H
 #define _DENSE_H
-#define alph 62
+#define alph 26
 
 #include <fstream>
 #include <utility>
@@ -14,17 +14,21 @@ template<class T>
 class Dense {
 private://just for func
 	class key {
+		friend class Dense;
 	private:
+		//char table[63] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 		char *str = nullptr;
 		const int len;
+		key(int n, char *_str):str(_str), len(n) {
+		}
 	public:
 		key(int n):len(n) {
 			refresh();
 		}
 		void operator++(int) {
 			int i = len - 2;
-			char x = str[i];
-			for (; i > 0; i--) {
+			char x;
+			/*for (; i > 0; i--) {
 				if ((x >= 65 && x < 90) || (x >= 97 && x < 122) || (x >= 48 && x < 57)) {
 					++x;
 					break;
@@ -45,12 +49,23 @@ private://just for func
 						}
 					}
 				}
+			}*/
+
+			for (; i >= 0; i--) {
+				x = str[i];
+				if (x == 'z')
+					str[i] = 'a';
+				else {
+					++str[i];
+					break;
+				}
 			}
-			str[i] = x;
+
+			/*str[i] = x;
 			++i;
 			for (; i < len - 1; i++) {
 				str[i] = 'a';
-			}
+			}*/
 		}
 		char* get_index() {
 			return str;
@@ -62,6 +77,76 @@ private://just for func
 			for (int i = 0; i < len - 1; i++)
 				str[i] = 'a';
 			str[len - 1] = 0;
+		}
+		key* operator-(key *x) {
+			char *res = new char[len];
+			int a;
+			for (int q = x.len - 2; q >= 0; q--) {
+				char c1 = str[q];
+				char c2 = x.str[q];
+				int i = 0;
+				for (; table[i] != c1 && i < 62; i++);
+				int j = 0;
+				for (; table[j] != c2 && j < 62; j++);
+				int r = i - j - a;
+				a = 0;
+				if (r > 0)
+					res[q] = r;
+				else {
+					res[62 - q] = r;
+					a--;
+				}
+			}
+			res[len - 1] = 0;
+			return new key(len, res);
+		}
+		/*key* operator-(char x[]) {
+			char *res = new char[len];
+			int a = 0;
+			for (int q = len - 2; q >= 0; q--) {
+				char c1 = str[q];
+				char c2 = x[q];
+				int i = 0;
+				for (; table[i] != c1 && i < 62; i++);
+				int j = 0;
+				for (; table[j] != c2 && j < 62; j++);
+				int r = i - j - a;
+				a = 0;
+				if (r > 0)
+					res[q] = r;
+				else {
+					res[62 - q] = r;
+					a--;
+				}
+			}
+			res[len - 1] = 0;
+			return new key(len, res);
+		}*/
+		key* operator-(char x[]) {
+			char *res = new char[len];
+			int a = 0;
+			for (int i = len - 2; i >= 0; i--) {
+				if (str[i] >= x[i]) {
+					res[i] = str[i] - x[i] + 97 + a;
+					a = 0;
+				}
+				else {
+					--a;
+					res[i] = 'z' + str[i] - x[i];
+				}
+			}
+			res[len - 1] = 0;
+			return new key(len, res);
+		}
+		bool operator>(char x[]) {
+			for (int i = 0; i < len; i++) {
+				if (str[i] == x[i])
+					continue;
+				if (str[i] > x[i])
+					return 1;
+				return 0;
+			}
+			return 0;
 		}
 		~key() {
 			delete[]str;
@@ -170,13 +255,27 @@ public:
 		dataFile.close();
 		keysFile.close();
 	}
-
+	T SearchByKey(char x[]) {
+		int i = 0;
+		key *fkey = last_key;
+		for (int k = 0; k < n*listSize; k++)
+			(*fkey)++;
+		while (*fkey > x) {
+			fkey = (*fkey) - x;
+			++i;
+		}
+		ReadPage(i);
+		for (int i = 0; i < listSize; i++) {
+			if (strcmp(arr[i].first, fkey->str))
+				return arr[i].second;
+		}
+	}
 	void test() {
 		for (int i = 0; i < listSize; i++)
 			cout << arr[i].second << endl;
 	}
 	int Insert(T _thing) {
-
+		
 	}
 	~Dense() {
 		delete[]file_path;
