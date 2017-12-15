@@ -1,7 +1,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #ifndef _DENSE_H
 #define _DENSE_H
-#define alph 62
+#define alph 26
+#define _long_alph 62
 
 #include <fstream>
 #include <utility>
@@ -9,64 +10,218 @@
 using namespace std;
 
 namespace bd {
-
-template<class T>
-class Dense {
-private://just for func
-	class key {
-	private:
-		char *str = nullptr;
-		const int len;
-	public:
-		key(int n):len(n) {
-			refresh();
+const char table[63] = { "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" };
+class key {
+public:
+#ifdef _LONG_ALPH_
+	static key& convert(unsigned long long x) {
+		unsigned long long p = x;
+		int n = 0;
+		while (p) {
+			p /= _long_alph;
+			++n;
 		}
-		void operator++(int) {
-			int i = len - 2;
-			char x = str[i];
-			for (; i > 0; i--) {
-				if ((x >= 65 && x < 90) || (x >= 97 && x < 122) || (x >= 48 && x < 57)) {
-					++x;
+		int len = n;
+		char *res = new char[n + 1];
+		res[n] = 0;
+		unsigned long long _x = x;
+		while (n>=0) {
+			res[--n] = table[x % _long_alph];
+			x /= _long_alph;
+		}
+		return *(new key(res, len + 1, _x));
+	}
+	void convertInt(char x[], int n) {
+		num = 0;
+		int k;
+		for (int i = 0; i < n - 1; i++) {
+			for (k = 0; k < _long_alph; k++) {
+				if (table[k] == x[n - i - 2])
+					break;
+			}
+			num += pow(_long_alph, i) * k;
+		}
+	}
+#endif
+private:
+	char *str = nullptr;
+	int len;
+	unsigned long long num = 0;//числовое представление
+	key(char *x, int n, unsigned long long _num) :len(n), num(_num) {
+		str = new char[len];
+		for (int i = 0; i < len - 1; i++)
+			str[i] = x[i];
+		str[len - 1] = 0;
+	}
+public:
+	key(int n) :len(n) {
+		refresh();
+	}
+	key(char *x): len(strlen(x) + 1) {
+		convertInt(x, len);
+		str = new char[len];
+		for (int i = 0; i < len - 1; i++)
+			str[i] = x[i];
+		str[len - 1] = 0;
+	}
+	key(char *x, int n) :len(n) {
+		convertInt(x, n);
+		str = new char[len];
+		for (int i = 0; i < len - 1; i++)
+			str[i] = x[i];
+		str[len - 1] = 0;
+	}
+	key(key& x) {
+		len = x.len;
+		str = new char[len];
+		for (int i = 0; i < len; i++)
+			str[i] = x.str[i];
+	}
+	void operator++(int) {
+		++num;
+		int i = len - 2;
+		char x = str[i];
+		for (; i > 0; i--) {
+			if ((x >= 65 && x < 90) || (x >= 97 && x < 122) || (x >= 48 && x < 57)) {
+				++x;
+				break;
+			}
+			else {
+				if (x == 122) {
+					x = 65;
 					break;
 				}
 				else {
-					if (x == 122) {
-						x = 65;
-						break;
-					}
+					if (x == 57)
+						continue;
 					else {
-						if (x == 57)
-							continue;
-						else {
-							if (x == 90) {
-								x = 48;
-								break;
-							}
+						if (x == 90) {
+							x = 48;
+							break;
 						}
 					}
 				}
 			}
-			str[i] = x;
-			++i;
-			for (; i < len - 1; i++) {
-				str[i] = 'a';
+		}
+		str[i] = x;
+		++i;
+		for (; i < len - 1; i++) {
+			str[i] = 'a';
+		}
+	}
+	char& operator[](int x) {
+		if (x >= len || x < 0)
+			throw out_of_range("Bad size");
+		return str[x];
+	}
+	key& operator+(key& x) {
+		char *result = new char[len];
+		char x1 = 0;
+		char x2 = 0;
+		char r = 0;
+		char a = 0;
+		for (int k = len - 2; k >= 0; k--) {
+			for (int i = 0; i < _long_alph; i++) {
+				if (table[i] == str[k])
+					x1 = i;
+				if (table[i] == x[k])
+					x2 = i;
+			}
+			r = x1 + x2 + a;
+			a = 0;
+			if (r < _long_alph) {
+				result[k] = table[r];
+			}
+			else {
+				result[_long_alph - k] = table[r];
+				++a;
 			}
 		}
-		char* get_index() {
-			return str;
+		result[len - 1] = 0;
+		return *(new key(result, len, num + x.num));
+	}
+	key& operator=(key& x) {
+		delete[]str;
+		len = x.len;
+		str = new char[len];
+		for (int i = 0; i < len; i++)
+			str[i] = x.str[i];
+		return *this;
+	}
+	key& operator-(key& x) {
+		char *result = new char[len];
+		char x1 = 0;
+		char x2 = 0;
+		char r = 0;
+		char a = 0;
+		for (int k = len - 2; k >= 0; k--) {
+			for (int i = 0; i < _long_alph; i++) {
+				if (table[i] == str[k])
+					x1 = i;
+				if (table[i] == x[k])
+					x2 = i;
+			}
+			r = x1 - x2 - a;
+			a = 0;
+			if (r >= 0) {
+				result[k] = table[r];
+			}
+			else {
+				result[_long_alph - k] = table[r];
+				++a;
+			}
 		}
-		void refresh() {
-			if (str)
-				delete[]str;
-			str = new char[len];
-			for (int i = 0; i < len - 1; i++)
-				str[i] = 'a';
-			str[len - 1] = 0;
-		}
-		~key() {
+		result[len - 1] = 0;
+		return *(new key(result, len, num-x.num));
+	}
+	key& operator/(key &x) {
+		return convert(num / x.num);
+	}
+	void Resize(int i) {
+		if (i < 0)
+			throw bad_array_new_length();
+		if (i == len)
+			return;
+		if (i < len) {
+			char *res = new char[i];
+			for (int k = i - 1, l = 0; k >= 0; k--, l++)
+				res[k] = str[len - 1 - l];
 			delete[]str;
+			str = res;
 		}
-	};
+		else {
+			if (i > len) {
+				char *res = new char[i + 1];
+				int l = 0;
+				for (int k = 0; k < len; k++, l++)
+					res[i - l] = str[len - k - 1];
+				for (int k = 0; k <= i - l; k++)
+					res[k] = 'a';
+				delete[]str;
+				str = res;
+			}
+		}
+	}
+	char* get_index() {
+		return str;
+	}
+	void refresh() {
+		if (str)
+			delete[]str;
+		str = new char[len];
+		for (int i = 0; i < len - 1; i++)
+		str[i] = 'a';
+		str[len - 1] = 0;
+	}
+	~key() {
+		delete[]str;
+	}
+};
+
+template<class T>
+class Dense {
+public://just for func
+
 private:
 	int n = 0;//число записей
 	int listSize = 0;//число записей на странице
@@ -111,7 +266,7 @@ public:
 		keys_path[j + 4] = 0;
 		//strcat_s(keys_path, 4, "kys");
 	}
-	int Add(T _thing) {
+	char* Add(T _thing) {
 		if (ind < listSize) {
 			olololo:
 			int l = strlen(last_key->get_index()) + 1;
@@ -120,7 +275,7 @@ public:
 			arr[ind].second = _thing;
 			++ind;
 			(*last_key)++;
-			return 0;
+			return arr[ind-1].first;
 		}
 		else {
 			for (int i = 0; i < listSize; i++)
@@ -129,7 +284,10 @@ public:
 			ind = 0;
 			goto olololo;
 		}
-		return -1;
+	}
+	void hrya() {
+		key a("aaaC5", 6);
+		key &w = a - "aaab1";
 	}
 	void WritePage() {//вообще-то надо дозаписывать в то место, куда надо, а не перезаписывать, но пока и так сойдёт
 		dataFile.open(file_path, ios::out | ios::binary | ios::app);
@@ -170,7 +328,13 @@ public:
 		dataFile.close();
 		keysFile.close();
 	}
-
+	T Search(key& x) {
+		//поделить ласт кей на кол-во ключей на одной странице
+		//загрузить страницу по найденному номеру
+		//найти на странице нужную запись
+		//???
+		//PROFIT!
+	}
 	void test() {
 		for (int i = 0; i < listSize; i++)
 			cout << arr[i].second << endl;
@@ -186,6 +350,14 @@ public:
 		}
 		delete[]arr;
 		//delete[]last_key;
+	}
+	int GetKeySize() {
+		return indexK;
+	}
+	int Remove() {
+		if (keys_path && file_path)
+			return std::remove(keys_path) + std::remove(file_path);
+		return -1;
 	}
 };
 
