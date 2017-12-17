@@ -46,7 +46,7 @@ public:
 private:
 	char *str = nullptr;
 	int len;
-	unsigned long long num = 0;//числовое представление
+	unsigned long long num = 0;//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	key(char *x, int n, unsigned long long _num) :len(n), num(_num) {
 		str = new char[len];
 		for (int i = 0; i < len - 1; i++)
@@ -108,6 +108,27 @@ public:
 		for (; i < len - 1; i++) {
 			str[i] = 'a';
 		}
+	}
+	void operator--(int){
+		for(int i=len-1;i>=0;i--){
+			if(str[i] == '0'){
+				str[i] = 'Z';
+				break;
+			}else{
+				if(str[i] == 'A'){
+					str[i] = 'z';
+					break;
+				}else{
+					if(str[i] == 'a'){
+						str[i] = '9';
+						continue;
+					}
+				}
+			}
+		}
+	}
+	int operator%(int x){
+		return num%x;
 	}
 	char& operator[](int x) {
 		if (x >= len || x < 0)
@@ -220,12 +241,13 @@ public:
 
 template<class T>
 class Dense {
+	friend class key;
 public://just for func
 
 private:
-	int n = 0;//число записей
-	int listSize = 0;//число записей на странице
-	int indexK = 0;//длина ключа (чтобы все страницы имели одинаковый размер)
+	int n = 0;//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	int listSize = 0;//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	int indexK = 0;//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
 	fstream dataFile, keysFile;
 	char *file_path = nullptr;
 	char *keys_path = nullptr;
@@ -289,7 +311,7 @@ public:
 		key a("aaaC5", 6);
 		key &w = a - "aaab1";
 	}
-	void WritePage() {//вообще-то надо дозаписывать в то место, куда надо, а не перезаписывать, но пока и так сойдёт
+	void WritePage() {//пїЅпїЅпїЅпїЅпїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 		dataFile.open(file_path, ios::out | ios::binary | ios::app);
 		keysFile.open(keys_path, ios::out | ios::binary | ios::app);
 		if (!(dataFile.is_open() && keysFile.is_open()))
@@ -297,7 +319,7 @@ public:
 		for (int i = 0; i < listSize; i++) {
 			dataFile.write((char*)&arr[i].second, sizeof(T));
 			keysFile.write(arr[i].first, indexK * sizeof(char));
-			int s = (pages * listSize + i) * sizeof(T);//указатель на запись в dataFile
+			int s = (pages * listSize + i) * sizeof(T);//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ dataFile
 			keysFile.write((char*)&s, sizeof(int));
 			if (dataFile.fail() || keysFile.fail())
 				throw "Ich Singer Bister tag Ervaght!";
@@ -329,11 +351,15 @@ public:
 		keysFile.close();
 	}
 	T Search(key& x) {
-		//поделить ласт кей на кол-во ключей на одной странице
-		//загрузить страницу по найденному номеру
-		//найти на странице нужную запись
+		//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+		//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+		//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 		//???
 		//PROFIT!
+		key& page = last_key / listSize;
+		int elem = last_key/listSize;
+		ReadPage(page.num);
+		return arr[elem].first;
 	}
 	void test() {
 		for (int i = 0; i < listSize; i++)
