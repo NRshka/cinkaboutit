@@ -8,6 +8,9 @@ using namespace bd;
 
 
 void main() {
+	key a = 3843;
+	key b = 1;
+	key c = a + b;
 	bd::Dense<int> bd1(100, 10);
 	bd::Dense<int> bd2(10, 10);
 	bd1.SetPath("D:\\sandcube\\data1.bin");
